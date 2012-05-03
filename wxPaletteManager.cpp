@@ -1,5 +1,6 @@
 #include "wxPaletteManager.h"
 
+DEFINE_EVENT_TYPE(wxEVT_PALETTE_MANAGER_UPDATED)
 IMPLEMENT_DYNAMIC_CLASS(wxPaletteManager, wxControl)
 
 bool wxPaletteManager::Create(wxWindow *parent,
@@ -40,9 +41,6 @@ void wxPaletteManager::Init()
       sync[i][j] = false;
     }
   }
-
-  //The last colour is white by default
-  colours[15][15] = white;
 
   Connect(wxEVT_PAINT     , wxPaintEventHandler(wxPaletteManager::OnPaint      ));
   Connect(wxEVT_SIZE      , wxSizeEventHandler (wxPaletteManager::OnSize       ));
@@ -246,6 +244,7 @@ void wxPaletteManager::OnLeftClick(wxMouseEvent& event)
   primary_col = (unsigned char)(xpos/16);
   primary_row = (unsigned char)(ypos/16);
   SetFocusFromKbd();
+  SendUpdateEvent(true, false, true, false);
   Refresh();
 }
 
@@ -260,6 +259,7 @@ void wxPaletteManager::OnRightClick(wxMouseEvent& event)
   secondary_col = (unsigned char)(xpos/16);
   secondary_row = (unsigned char)(ypos/16);
   SetFocusFromKbd();
+  SendUpdateEvent(false, true, false, true);
   Refresh();
 }
 
@@ -301,6 +301,7 @@ void wxPaletteManager::OnLeftUp(wxMouseEvent& event)
     SwapColours(primary_row, primary_col, drag_row, drag_col);
     primary_col = drag_col;
     primary_row = drag_row;
+    SendUpdateEvent(true, false, false, false);
   }
   InvalidateDrag();
   Refresh();
@@ -318,6 +319,11 @@ void wxPaletteManager::OnKeyDown(wxKeyEvent& event)
                     0, -1)) {
         primary_row--;
         secondary_row--;
+        bool pri_change = false;
+        bool sec_change = false;
+        if(IsColourZero(primary_row  , primary_col  )) pri_change = true;
+        if(IsColourZero(secondary_row, secondary_col)) sec_change = true;
+        SendUpdateEvent(true, true, pri_change, sec_change);
       }
       break;
 
@@ -325,8 +331,13 @@ void wxPaletteManager::OnKeyDown(wxKeyEvent& event)
       if(!BatchMove(primary_row  , primary_col,
                     secondary_row, secondary_col,
                     0, 1)) {
+        bool pri_change = false;
+        bool sec_change = false;
+        if(IsColourZero(primary_row  , primary_col  )) pri_change = true;
+        if(IsColourZero(secondary_row, secondary_col)) sec_change = true;
         primary_row++;
         secondary_row++;
+        SendUpdateEvent(true, true, pri_change, sec_change);
       }
       break;
 
@@ -336,6 +347,11 @@ void wxPaletteManager::OnKeyDown(wxKeyEvent& event)
                     -1, 0)) {
         primary_col--;
         secondary_col--;
+        bool pri_change = false;
+        bool sec_change = false;
+        if(IsColourZero(primary_row  , primary_col  )) pri_change = true;
+        if(IsColourZero(secondary_row, secondary_col)) sec_change = true;
+        SendUpdateEvent(true, true, pri_change, sec_change);
       }
       break;
 
@@ -343,8 +359,13 @@ void wxPaletteManager::OnKeyDown(wxKeyEvent& event)
       if(!BatchMove(primary_row  , primary_col,
                     secondary_row, secondary_col,
                     1, 0)) {
+        bool pri_change = false;
+        bool sec_change = false;
+        if(IsColourZero(primary_row  , primary_col  )) pri_change = true;
+        if(IsColourZero(secondary_row, secondary_col)) sec_change = true;
         primary_col++;
         secondary_col++;
+        SendUpdateEvent(true, true, pri_change, sec_change);
       }
       break;
 
@@ -356,19 +377,31 @@ void wxPaletteManager::OnKeyDown(wxKeyEvent& event)
     if(event.AltDown()) {
       switch(event.GetKeyCode()) {
       case WXK_UP:
-        if(!SwapColours(secondary_row, secondary_col, secondary_row-1, secondary_col)) secondary_row--;
+        if(!SwapColours(secondary_row, secondary_col, secondary_row-1, secondary_col)){
+          secondary_row--;
+          SendUpdateEvent(false, true, false, false);
+        }
         break;
 
       case WXK_DOWN:
-        if(!SwapColours(secondary_row, secondary_col, secondary_row+1, secondary_col)) secondary_row++;
+        if(!SwapColours(secondary_row, secondary_col, secondary_row+1, secondary_col)){
+          secondary_row++;
+          SendUpdateEvent(false, true, false, false);
+        }
         break;
 
       case WXK_LEFT:
-        if(!SwapColours(secondary_row, secondary_col, secondary_row, secondary_col-1)) secondary_col--;
+        if(!SwapColours(secondary_row, secondary_col, secondary_row, secondary_col-1)){
+          secondary_col--;
+          SendUpdateEvent(false, true, false, false);
+        }
         break;
 
       case WXK_RIGHT:
-        if(!SwapColours(secondary_row, secondary_col, secondary_row, secondary_col+1)) secondary_col++;
+        if(!SwapColours(secondary_row, secondary_col, secondary_row, secondary_col+1)){
+          secondary_col++;
+          SendUpdateEvent(false, true, false, false);
+        }
         break;
 
       default:
@@ -378,19 +411,31 @@ void wxPaletteManager::OnKeyDown(wxKeyEvent& event)
     } else {
       switch(event.GetKeyCode()) {
       case WXK_UP:
-        if(!SwapColours(primary_row, primary_col, primary_row-1, primary_col)) primary_row--;
+        if(!SwapColours(primary_row, primary_col, primary_row-1, primary_col)){
+          primary_row--;
+          SendUpdateEvent(true, false, false, false);
+        }
         break;
 
       case WXK_DOWN:
-        if(!SwapColours(primary_row, primary_col, primary_row+1, primary_col)) primary_row++;
+        if(!SwapColours(primary_row, primary_col, primary_row+1, primary_col)){
+          primary_row++;
+          SendUpdateEvent(true, false, false, false);
+        }
         break;
 
       case WXK_LEFT:
-        if(!SwapColours(primary_row, primary_col, primary_row, primary_col-1)) primary_col--;
+        if(!SwapColours(primary_row, primary_col, primary_row, primary_col-1)){
+          primary_col--;
+          SendUpdateEvent(true, false, false, false);
+        }
         break;
 
       case WXK_RIGHT:
-        if(!SwapColours(primary_row, primary_col, primary_row, primary_col+1)) primary_col++;
+        if(!SwapColours(primary_row, primary_col, primary_row, primary_col+1)){
+          primary_col++;
+          SendUpdateEvent(true, false, false, false);
+        }
         break;
 
       default:
@@ -401,25 +446,38 @@ void wxPaletteManager::OnKeyDown(wxKeyEvent& event)
   } else if(event.AltDown()) {
     switch(event.GetKeyCode()) {
     case WXK_UP:
-      if(secondary_row > 0) secondary_row--;
+      if(secondary_row > 0){
+        secondary_row--;
+        SendUpdateEvent(false, true, false, true);
+      }
       break;
 
     case WXK_DOWN:
-      if(secondary_row < 15) secondary_row++;
+      if(secondary_row < 15){
+        secondary_row++;
+        SendUpdateEvent(false, true, false, true);
+      }
       break;
 
     case WXK_LEFT:
-      if(secondary_col > 0) secondary_col--;
+      if(secondary_col > 0){
+        secondary_col--;
+        SendUpdateEvent(false, true, false, true);
+      }
       break;
 
     case WXK_RIGHT:
-      if(secondary_col < 15) secondary_col++;
+      if(secondary_col < 15){
+        secondary_col++;
+        SendUpdateEvent(false, true, false, true);
+      }
       break;
       
     case WXK_F1:
     case WXK_HOME:
       secondary_col = 0;
       secondary_row = 0;
+      SendUpdateEvent(false, true, false, true);
       break;
 
     default:
@@ -430,30 +488,44 @@ void wxPaletteManager::OnKeyDown(wxKeyEvent& event)
     unsigned char temp = 0;
     switch(event.GetKeyCode()) {
     case WXK_UP:
-      if(primary_row > 0) primary_row--;
+      if(primary_row > 0){
+        primary_row--;
+        SendUpdateEvent(true, false, true, false);
+      }
       break;
 
     case WXK_DOWN:
-      if(primary_row < 15) primary_row++;
+      if(primary_row < 15){
+        primary_row++;
+        SendUpdateEvent(true, false, true, false);
+      }
       break;
 
     case WXK_LEFT:
-      if(primary_col > 0) primary_col--;
+      if(primary_col > 0){
+        primary_col--;
+        SendUpdateEvent(true, false, true, false);
+      }
       break;
 
     case WXK_RIGHT:
-      if(primary_col < 15) primary_col++;
+      if(primary_col < 15){
+        primary_col++;
+        SendUpdateEvent(true, false, true, false);
+      }
       break;
 
     case WXK_F1:
     case WXK_HOME:
       primary_col = 0;
       primary_row = 0;
+      SendUpdateEvent(true, false, true, false);
       break;
 
     case WXK_F2:
       secondary_col = primary_col;
       secondary_row = primary_row;
+      SendUpdateEvent(false, true, false, true);
       break;
 
     case WXK_F3:
@@ -463,24 +535,29 @@ void wxPaletteManager::OnKeyDown(wxKeyEvent& event)
       temp = primary_row;
       primary_row = secondary_row;
       secondary_row = temp;
+      SendUpdateEvent(true, true, true, true);
       break;
 
     case WXK_F4:
       SwapColours(primary_row, primary_col, secondary_row, secondary_col);
+      SendUpdateEvent(false, false, true, true);
       break;
 
     case WXK_F5:
     case WXK_INSERT:
       SetSync  (primary_row, primary_col, GetSync  (secondary_row, secondary_col));
       SetColour(primary_row, primary_col, GetColour(secondary_row, secondary_col));
+      SendUpdateEvent(false, false, true, false);
       break;
 
     case WXK_F6:
       ToggleSync(primary_row, primary_col);
+      SendUpdateEvent(false, false, false, false);
       break;
 
     case WXK_DELETE:
       SetColour(primary_row, primary_col, wxColour(0,0,0));
+      SendUpdateEvent(false, false, true, false);
       break;
 
     default:
@@ -514,6 +591,22 @@ bool wxPaletteManager::SetColour(unsigned char row, unsigned char col, wxColour 
     return false;
   }
   return true;
+}
+
+
+
+bool wxPaletteManager::SetPrimaryColour(wxColour new_colour, bool ignore_sync){
+  bool ret = SetColour(primary_row, primary_col, new_colour, ignore_sync);
+  //SendUpdateEvent(false, false, true, false);
+  return ret;
+}
+
+
+
+bool wxPaletteManager::SetSecondaryColour(wxColour new_colour, bool ignore_sync){
+  bool ret = SetColour(secondary_row, secondary_col, new_colour, ignore_sync);
+  //SendUpdateEvent(false, false, false, true);
+  return ret;
 }
 
 
@@ -632,4 +725,23 @@ bool wxPaletteManager::BatchMove(unsigned char row0, unsigned char col0,
   } else {
     return false;
   }
+}
+
+
+
+void wxPaletteManager::SendUpdateEvent(bool pri_pos_moved, bool sec_pos_moved,
+                                       bool pri_colour_changed, bool sec_colour_changed){
+  wxPaletteManagerEvent notify(wxEVT_PALETTE_MANAGER_UPDATED);
+  notify.SetId(GetId());
+  notify.SetState(pri_pos_moved, sec_pos_moved, pri_colour_changed, sec_colour_changed);
+  wxPostEvent(GetParent(), notify);
+}
+
+
+
+void wxPaletteManagerEvent::SetState(bool pri_pos_moved, bool sec_pos_moved, bool pri_colour_changed, bool sec_colour_changed){
+  pri_pos_mov   = pri_pos_moved;
+  sec_pos_mov   = sec_pos_moved;
+  pri_colour_ch = pri_colour_changed;
+  sec_colour_ch = sec_colour_changed;
 }

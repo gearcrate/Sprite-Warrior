@@ -33,7 +33,7 @@ void wxColourSlider::OnMouse(wxMouseEvent& event)
     } else {
       SetCursorPos(((float)event.GetX()-3)/(GetSize().GetWidth ()-6), true);
     }
-    wxCommandEvent notify(wxEVT_COMMAND_SLIDER_UPDATED);
+    wxScrollEvent notify(wxEVT_SCROLL_THUMBTRACK);
     notify.SetId(GetId());
     wxPostEvent(this, notify);
     Refresh();
@@ -46,7 +46,8 @@ void wxColourSlider::OnMouse(wxMouseEvent& event)
 
 void wxColourSlider::OnMouseUp(wxMouseEvent& event)
 {
-  wxCommandEvent notify(wxEVT_SCROLL_THUMBRELEASE);
+  wxScrollEvent notify(wxEVT_SCROLL_THUMBRELEASE);
+  notify.SetId(GetId());
   wxPostEvent(this, notify);
   Refresh();
 }
@@ -57,17 +58,20 @@ void wxColourSlider::OnScroll(wxMouseEvent& event)
 {
   if(event.GetWheelRotation() >= 0) {
     SetCursorPos(((float)GetIncrementPos())/increments + 1.0001/increments, true);
-    wxCommandEvent notify(wxEVT_COMMAND_SLIDER_UPDATED);
+    wxScrollEvent notify(wxEVT_SCROLL_THUMBTRACK);
     notify.SetId(GetId());
     wxPostEvent(this, notify);
     Refresh();
   } else if(event.GetWheelRotation() < 0) {
     SetCursorPos(((float)GetIncrementPos())/increments - 0.9999/increments, true);
-    wxCommandEvent notify(wxEVT_COMMAND_SLIDER_UPDATED);
+    wxScrollEvent notify(wxEVT_SCROLL_THUMBTRACK);
     notify.SetId(GetId());
     wxPostEvent(this, notify);
     Refresh();
   }
+  wxScrollEvent notify(wxEVT_SCROLL_THUMBRELEASE);
+  notify.SetId(GetId());
+  wxPostEvent(this, notify);
 }
 
 
@@ -331,7 +335,9 @@ void wxColourSlider::SetRefColour(const wxColourExt& new_colour, bool update_cur
 
   if(update_cursor) {
     switch(mode) {
+    case RGB:
     case RGB_R:
+    default:
       SetCursorPos(colour.RgbRed());
       break;
 
@@ -343,6 +349,7 @@ void wxColourSlider::SetRefColour(const wxColourExt& new_colour, bool update_cur
       SetCursorPos(colour.RgbBlue());
       break;
 
+    case HSL:
     case HSL_H:
       SetCursorPos(colour.HslHue());
       break;
@@ -355,6 +362,7 @@ void wxColourSlider::SetRefColour(const wxColourExt& new_colour, bool update_cur
       SetCursorPos(colour.HslLuminosity());
       break;
 
+    case HSV:
     case HSV_H:
       SetCursorPos(colour.HsvHue());
       break;
@@ -367,6 +375,7 @@ void wxColourSlider::SetRefColour(const wxColourExt& new_colour, bool update_cur
       SetCursorPos(colour.HsvValue());
       break;
 
+    case CMY:
     case CMY_C:
       SetCursorPos(colour.CmyCyan());
       break;
@@ -394,7 +403,9 @@ void wxColourSlider::SetCursorPos(float pos, bool update_ref_colour)
 
   if(update_ref_colour) {
     switch(mode) {
+    case RGB:
     case RGB_R:
+    default:
       colour.RgbRed(pos);
       break;
       
@@ -406,6 +417,7 @@ void wxColourSlider::SetCursorPos(float pos, bool update_ref_colour)
       colour.RgbBlue(pos);
       break;
 
+    case HSL:
     case HSL_H:
       colour.HslHue(pos);
       break;
@@ -418,6 +430,7 @@ void wxColourSlider::SetCursorPos(float pos, bool update_ref_colour)
       colour.HslLuminosity(pos);
       break;
 
+    case HSV:
     case HSV_H:
       colour.HsvHue(pos);
       break;
@@ -430,6 +443,7 @@ void wxColourSlider::SetCursorPos(float pos, bool update_ref_colour)
       colour.HsvValue(pos);
       break;
 
+    case CMY:
     case CMY_C:
       colour.CmyCyan(pos);
       break;

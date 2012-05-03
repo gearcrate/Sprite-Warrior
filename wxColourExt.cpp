@@ -391,7 +391,7 @@ void wxColourExt::GetHSV(float* h, float* s, float* v) const
 
 
 
-     void wxColourExt::SetCMY(float  c, float  m, float  y)
+void wxColourExt::SetCMY(float  c, float  m, float  y)
 {
   C = c;
   M = m;

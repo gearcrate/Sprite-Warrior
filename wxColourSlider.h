@@ -5,15 +5,19 @@
 #include "wxColourExt.h"
 
 enum wxColourSliderStyles {
-  RGB_R = 1,
+  RGB = 1,
+  RGB_R ,
   RGB_G,
   RGB_B,
+  HSL,
   HSL_H,
   HSL_S,
   HSL_L,
+  HSV,
   HSV_H,
   HSV_S,
   HSV_V,
+  CMY,
   CMY_C,
   CMY_M,
   CMY_Y

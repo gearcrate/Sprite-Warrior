@@ -5,7 +5,10 @@
 #include <wx/tglbtn.h>
 #include "PaletteToolbar.h"
 #include "wxColourPicker.h"
-//#include "wxColourSlider.h"
+#include "wxPaletteManager.h"
+
+const int id_colour_picker = 1;
+const int id_palette = 1;
 
 // application class
 class MyFrame : public wxFrame
@@ -21,12 +24,9 @@ public:
     wxPanel* tools = new wxPanel(this, -1,
                                  wxDefaultPosition, wxSize(128,128));
 
-    PaletteToolbar* palette = new PaletteToolbar(this, -1);
-    wxColourPicker*  color_chooser = new wxColourPicker(this, -1);
-
-/*    wxColourSlider* text2 = new wxColourSlider(this, -1,  wxT("Test"), wxDefaultPosition, wxSize(100, 16));
-    text2->SetColourMode(RGB_R);
-    text2->SetRefColour(wxColour(255,128,128));*/
+    palette = new PaletteToolbar(this, id_palette);
+    colour_picker = new wxColourPicker(this, id_colour_picker);
+    colour_picker->setColour(palette->GetPrimaryColour());
 
     wxAuiNotebook* tabs = new wxAuiNotebook(this, -1);
     
@@ -56,22 +56,40 @@ public:
     //tool_pane_info.TopDockable(false);
 
     // add the panes to the manager
-    m_mgr.AddPane(color_chooser, tool_pane_info);
+    m_mgr.AddPane(colour_picker, tool_pane_info);
     m_mgr.AddPane(palette, tool_pane_info);
     m_mgr.AddPane(tools, tool_pane_info);
     m_mgr.AddPane(tabs, wxCENTER);
 
+    Connect(id_colour_picker, wxEVT_COLOUR_PICKER_UPDATED  , wxColourPickerEventHandler  (MyFrame::OnColorPickerUpdate));
+    Connect(id_palette      , wxEVT_PALETTE_MANAGER_UPDATED, wxPaletteManagerEventHandler(MyFrame::OnPaletteManagerUpdate));
+    
     // tell the manager to "commit" all the changes just made
     m_mgr.Update();
+    
   }
 
   ~MyFrame() {
     // deinitialize the frame manager
     m_mgr.UnInit();
   }
+  
+  void OnColorPickerUpdate(wxColourPickerEvent& event){
+    palette->SetPrimaryColour(colour_picker->GetColour());
+    palette->Refresh();
+  }
+  
+  void OnPaletteManagerUpdate(wxPaletteManagerEvent& event){
+    if(event.HasPrimaryColourChanged()){
+      colour_picker->setColour(palette->GetPrimaryColour());
+      colour_picker->Refresh();
+    }
+  }
 
 private:
   wxAuiManager m_mgr;
+  PaletteToolbar* palette;
+  wxColourPicker* colour_picker;
 };
 
 // our normal wxApp-derived class, as usual
